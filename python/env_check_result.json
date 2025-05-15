@@ -1,0 +1,12 @@
+{
+  "python_version": "3.11.8 (tags/v3.11.8:db85d51, Feb  6 2024, 22:03:32) [MSC v.1937 64 bit (AMD64)]",
+  "platform": "Windows-10-10.0.26100-SP0",
+  "executable": "C:\\Users\\anhan\\AppData\\Local\\Programs\\Python\\Python311\\python.exe",
+  "path": "c:\\Users\\anhan\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin;C:\\Program Files\\Microsoft MPI\\Bin\\;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\System32\\WindowsPowerShell\\v1.0\\;C:\\WINDOWS\\System32\\OpenSSH\\;C:\\Program Files\\Git\\cmd;C:\\Program Files\\nodejs\\;C:\\Users\\anhan\\AppData\\Local\\ComposerSetup\\bin;C:\\Program Files\\Azure Data Studio\\bin;C:\\Program Files (x86)\\Microsoft SQL Server\\140\\Tools\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\140\\Tools\\Binn\\;C:\\Program Files (x86)\\Microsoft SQL Server\\140\\DTS\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\140\\DTS\\Binn\\;C:\\Program Files\\Microsoft SQL Server\\Client SDK\\ODBC\\130\\Tools\\Binn\\;C:\\Program Files\\Cloudflare\\Cloudflare WARP\\;C:\\Users\\anhan\\AppData\\Local\\Microsoft\\WindowsApps;C:\\laragon\\bin\\php\\php-8.2.4-nts-Win32-vs16-x64;C:\\Users\\anhan\\AppData\\Roaming\\Composer\\vendor\\bin;C:\\Users\\anhan\\AppData\\Roaming\\npm;C:\\adb;C:\\WINDOWS\\system32;C:\\WINDOWS;C:\\WINDOWS\\System32\\Wbem;C:\\WINDOWS\\Syst;C:\\Program Files\\Docker\\Docker\\resources\\bin;C:\\Users\\anhan\\AppData\\Local\\Microsoft\\WindowsApps;C:\\Users\\anhan\\AppData\\Local\\Programs\\Microsoft VS Code\\bin;C:\\xampp\\php;C:\\Users\\anhan\\AppData\\Local\\ComposerSetup\\bin;C:\\Users\\anhan\\AppData\\Roaming\\Composer\\vendor\\bin;C:\\Users\\anhan\\AppData\\Roaming\\npm;C:\\Program Files\\Azure Data Studio\\bin;C:\\Users\\anhan\\AppData\\Local\\Programs\\cursor\\resources\\app\\bin",
+  "working_dir": "C:\\xampp\\htdocs\\Rss\\Rss-app",
+  "script_dir": "C:\\xampp\\htdocs\\Rss\\Rss-app\\python",
+  "pil_installed": true,
+  "pil_version": "11.2.1",
+  "imagegrab_works": true,
+  "webbrowser_installed": true
+}

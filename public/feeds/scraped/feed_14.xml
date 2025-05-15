@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title><![CDATA[RSS Feed - techcrunch.com]]></title>
+    <link>https://techcrunch.com/category/artificial-intelligence/</link>
+    <description><![CDATA[Generated RSS feed from https://techcrunch.com/category/artificial-intelligence/]]></description>
+    <atom:link href="http://127.0.0.1:8000/feeds/scraped/feed_14.xml" rel="self" type="application/rss+xml" />
+    <image>
+      <url>https://techcrunch.com/favicon.ico</url>
+      <title><![CDATA[RSS Feed - techcrunch.com]]></title>
+      <link>https://techcrunch.com/category/artificial-intelligence/</link>
+    </image>
+    <language>vi</language>
+    <generator>RSS Feed Generator</generator>
+    <lastBuildDate>Thu, 15 May 2025 10:23:48 +0000</lastBuildDate>
+    <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    <ttl>60</ttl>
+    <item>
+      <title><![CDATA[Most Popular]]></title>
+      <link>https://techcrunch.com</link>
+      <guid isPermaLink="true">https://techcrunch.com</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[Uber to introduce fixed-route shuttles in major US cities designed for commuters]]></title>
+      <link>https://techcrunch.com/2025/05/14/uber-to-introduce-fixed-route-shuttles-in-major-us-cities-other-ways-to-save/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/14/uber-to-introduce-fixed-route-shuttles-in-major-us-cities-other-ways-to-save/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[Google launches new initiative to back startups building AI]]></title>
+      <link>https://techcrunch.com/2025/05/12/google-launches-new-initiative-to-back-startups-building-ai/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/12/google-launches-new-initiative-to-back-startups-building-ai/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[Saudi prince launches AI venture as Trump, Musk, Altman, and Zuckerberg arrive for conference]]></title>
+      <link>https://techcrunch.com/2025/05/12/saudi-prince-launches-ai-venture-as-trump-musk-altman-and-zuckerberg-arrive-for-conference/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/12/saudi-prince-launches-ai-venture-as-trump-musk-altman-and-zuckerberg-arrive-for-conference/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[Sam Altman apparently does not respect olive oil]]></title>
+      <link>https://techcrunch.com/2025/05/12/sam-altman-apparently-does-not-respect-olive-oil/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/12/sam-altman-apparently-does-not-respect-olive-oil/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[InventWood is about to mass-produce wood that’s stronger than steel]]></title>
+      <link>https://techcrunch.com/2025/05/12/inventwood-is-about-to-mass-produce-wood-thats-stronger-than-steel/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/12/inventwood-is-about-to-mass-produce-wood-thats-stronger-than-steel/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[23andMe customers notified of bankruptcy and potential claims — deadline to file is July 14]]></title>
+      <link>https://techcrunch.com/2025/05/11/23andme-customers-notified-of-bankruptcy-and-potential-claims-deadline-to-file-is-july-14/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/11/23andme-customers-notified-of-bankruptcy-and-potential-claims-deadline-to-file-is-july-14/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+    <item>
+      <title><![CDATA[The near joy of biking with Ray-Ban Meta glasses]]></title>
+      <link>https://techcrunch.com/2025/05/10/the-near-joy-of-biking-with-ray-ban-meta-glasses/</link>
+      <guid isPermaLink="true">https://techcrunch.com/2025/05/10/the-near-joy-of-biking-with-ray-ban-meta-glasses/</guid>
+      <description><![CDATA[No description available.]]></description>
+      <pubDate>Thu, 15 May 2025 10:23:48 +0000</pubDate>
+    </item>
+  </channel>
+</rss>

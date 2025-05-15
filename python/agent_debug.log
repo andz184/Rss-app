@@ -1,0 +1,24 @@
+[2025-05-14 16:37:35] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 16:37:36] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 16:53:35] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 16:54:43] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 16:54:43] Python version: 3.11.8 (tags/v3.11.8:db85d51, Feb  6 2024, 22:03:32) [MSC v.1937 64 bit (AMD64)]
+[2025-05-14 16:54:43] Tham số: ['python/simple_agent_bridge.py', '{instruction:Mở', 'YouTube', 'và', 'chụp', 'màn', 'hình, config:{}}']
+[2025-05-14 16:54:43] OS: nt
+[2025-05-14 16:54:43] Đã import thành công thư viện PIL
+[2025-05-14 16:54:49] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 16:54:49] Python version: 3.11.8 (tags/v3.11.8:db85d51, Feb  6 2024, 22:03:32) [MSC v.1937 64 bit (AMD64)]
+[2025-05-14 16:54:49] Tham số: ['python/simple_agent_bridge.py', '{\\', 'instruction\\:\\Mở', 'YouTube', 'và', 'chụp', 'màn', 'hình\\, \\config\\:{}}']
+[2025-05-14 16:54:49] OS: nt
+[2025-05-14 16:54:49] Đã import thành công thư viện PIL
+[2025-05-14 17:00:42] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 17:04:32] Script được gọi tại: C:\xampp\htdocs\Rss\Rss-app\python
+[2025-05-14 17:06:56] test_agent.py được gọi với tham số: ['python/test_agent.py']
+[2025-05-14 17:06:56] Python version: 3.11.8 (tags/v3.11.8:db85d51, Feb  6 2024, 22:03:32) [MSC v.1937 64 bit (AMD64)]
+[2025-05-14 17:06:56] Thư mục hiện tại: C:\xampp\htdocs\Rss\Rss-app
+[2025-05-14 17:06:56] Thư mục screenshots đã tồn tại
+[2025-05-14 17:06:56] Đang mở YouTube...
+[2025-05-14 17:06:57] Đợi 5 giây để web load...
+[2025-05-14 17:07:03] Đã import PIL.ImageGrab thành công
+[2025-05-14 17:07:06] Đã lưu ảnh tại: C:\xampp\htdocs\Rss\Rss-app\screenshots\youtube_20250514_170705.png
+[2025-05-14 17:07:06] Hoàn thành!
