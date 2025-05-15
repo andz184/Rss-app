@@ -775,7 +775,7 @@ class WebScraperController extends Controller
                 }
             }
         } else if (preg_match('/^[a-z]+$/', $selector)) {
-            // If selector is an element name (like 'article')
+        // If selector is an element name (like 'article')
             preg_match_all("/<{$selector}[^>]*>(.*?)<\/{$selector}>/is", $html, $matches);
 
             if (!empty($matches[0])) {

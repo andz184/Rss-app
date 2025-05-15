@@ -1,0 +1,29 @@
+/* Basic CSS styles for the application */
+@import url('https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap');
+
+:root {
+    --font-sans: 'Figtree', system-ui, sans-serif;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: var(--font-sans);
+    line-height: 1.5;
+    color: #333;
+}
+
+a {
+    color: #ff7846;
+    text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+/* Add any other essential styles your app needs */ 
