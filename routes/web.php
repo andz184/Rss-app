@@ -33,6 +33,22 @@ Route::get('/rss/9', function() {
         ->header('Content-Type', 'application/rss+xml; charset=utf-8');
 })->name('rss.fixed.9');
 
+
+// Custom route for reference feed
+Route::get('/rss/reference', function() {
+    $filePath = public_path('feeds/scraped/custom_feed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.reference');
+
+
+// Custom route for test feed
+Route::get('/rss/test', function() {
+    $filePath = public_path('feeds/scraped/test_feed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.test');
+
 Auth::routes();
 
 Route::middleware('auth')->group(function () {
@@ -98,6 +114,22 @@ Route::get('/rss/9', function() {
         ->header('Content-Type', 'application/rss+xml; charset=utf-8');
 })->name('rss.fixed.9');
 
+
+// Custom route for reference feed
+Route::get('/rss/reference', function() {
+    $filePath = public_path('feeds/scraped/custom_feed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.reference');
+
+
+// Custom route for test feed
+Route::get('/rss/test', function() {
+    $filePath = public_path('feeds/scraped/test_feed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.test');
+
 Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
@@ -134,3 +166,10 @@ Route::get('/check-python-env', function () {
 Route::get('/screenshots-gallery', function () {
     return File::get(base_path('display_screenshot.php'));
 });
+
+// Custom route for simple feed example (for n8n compatibility)
+Route::get('/rss/simple', function() {
+    $filePath = public_path('feeds/scraped/simple_feed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.simple');

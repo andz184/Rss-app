@@ -2,29 +2,32 @@
 <rss version="2.0">
   <channel>
     <title>Tin tức công nghệ</title>
-    <link>http://localhost:8000/rss/test</link>
+    <link>https://example.com/tech-news</link>
     <description>Cập nhật tin tức công nghệ mới nhất</description>
     <language>vi</language>
-    <lastBuildDate>Fri, 16 May 2025 04:30:21 +0200</lastBuildDate>
+    <lastBuildDate>Fri, 16 May 2025 02:14:07 +0000</lastBuildDate>
+
     <item>
       <title>Bài viết công nghệ số 1</title>
       <link>https://example.com/post1</link>
       <description>Đây là phần mô tả ngắn gọn về bài viết công nghệ đầu tiên</description>
-      <pubDate>Fri, 16 May 2025 04:30:21 +0200</pubDate>
+      <pubDate>Fri, 16 May 2025 02:14:07 +0000</pubDate>
       <guid>https://example.com/post1</guid>
     </item>
+
     <item>
       <title>Bài viết công nghệ số 2</title>
       <link>https://example.com/post2</link>
       <description>Đây là phần mô tả ngắn gọn về bài viết công nghệ thứ hai</description>
-      <pubDate>Thu, 15 May 2025 04:30:21 +0200</pubDate>
+      <pubDate>Fri, 15 May 2025 05:30:00 +0000</pubDate>
       <guid>https://example.com/post2</guid>
     </item>
+
     <item>
       <title>Bài viết công nghệ số 3</title>
       <link>https://example.com/post3</link>
       <description>Đây là phần mô tả ngắn gọn về bài viết công nghệ thứ ba</description>
-      <pubDate>Wed, 14 May 2025 04:30:21 +0200</pubDate>
+      <pubDate>Fri, 14 May 2025 12:45:30 +0000</pubDate>
       <guid>https://example.com/post3</guid>
     </item>
   </channel>

@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>RSS Feed Comparison</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        h1 { color: #333; }
+        .comparison { display: flex; }
+        .feed { flex: 1; margin: 10px; padding: 15px; border: 1px solid #ddd; }
+        h2 { color: #444; }
+        pre { background: #f5f5f5; padding: 10px; overflow: auto; }
+    </style>
+</head>
+<body>
+    <h1>RSS Feed Comparison</h1>
+    <div class="comparison">
+        <div class="feed">
+            <h2>Reference Feed</h2>
+            <p><a href="http://localhost:8000/rss/reference" target="_blank">View Feed</a></p>
+            <pre id="reference-feed">Loading...</pre>
+        </div>
+        <div class="feed">
+            <h2>Test Feed</h2>
+            <p><a href="http://localhost:8000/rss/test" target="_blank">View Feed</a></p>
+            <pre id="test-feed">Loading...</pre>
+        </div>
+    </div>
+    <script>
+        // Function to escape HTML for display
+        function escapeHtml(html) {
+            return html
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;")
+                .replace(/'/g, "&#039;");
+        }
+
+        // Function to fetch and display feeds
+        async function fetchFeed(url, elementId) {
+            try {
+                const response = await fetch(url);
+                const text = await response.text();
+                document.getElementById(elementId).textContent = text;
+            } catch (error) {
+                document.getElementById(elementId).textContent = "Error loading feed: " + error.message;
+            }
+        }
+
+        // Load feeds
+        window.onload = function() {
+            fetchFeed("http://localhost:8000/rss/reference", "reference-feed");
+            fetchFeed("http://localhost:8000/rss/test", "test-feed");
+        };
+    </script>
+</body>
+</html>

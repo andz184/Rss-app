@@ -1,11 +1,11 @@
 <?php
 
 // This script directly fetches and fixes an RSS feed's format
-// to match the structure from rss.app without database access
+// to match the exact structure from rss.app without database access
 
-// Settings
-$feedUrl = 'http://lst.lat/rss/9'; // The URL of the problematic feed
-$outputFile = __DIR__ . '/public/feeds/scraped/fixed_feed_9.xml';
+// Settings - can be changed to any feed URL
+$feedUrl = isset($argv[1]) ? $argv[1] : 'http://lst.lat/rss/9';
+$outputFile = __DIR__ . '/public/feeds/scraped/fixed_feed_custom.xml';
 
 // Helper functions
 function cleanText($text) {
@@ -62,107 +62,145 @@ function balanceHtml($html) {
 }
 
 try {
-    // Step 1: Fetch the original feed
+    // Step 1: Fetch the original feed using cURL to avoid redirects issues
     echo "Fetching feed from {$feedUrl}...\n";
-    $originalXml = @file_get_contents($feedUrl);
 
-    if ($originalXml === false) {
-        throw new Exception("Failed to fetch the feed from {$feedUrl}");
+    $ch = curl_init();
+    curl_setopt($ch, CURLOPT_URL, $feedUrl);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, false); // Don't follow redirects automatically
+    curl_setopt($ch, CURLOPT_USERAGENT, 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36');
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+
+    $originalXml = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $effectiveUrl = curl_getinfo($ch, CURLINFO_EFFECTIVE_URL);
+
+    curl_close($ch);
+
+    echo "HTTP Status: {$httpCode}\n";
+    echo "Effective URL: {$effectiveUrl}\n";
+
+    if ($originalXml === false || $httpCode >= 400) {
+        throw new Exception("Failed to fetch the feed. HTTP status: {$httpCode}");
     }
 
-    // Step 2: Parse the original XML to extract its content
-    $feedData = new stdClass();
-    $feedData->title = 'Feed Title';
-    $feedData->description = 'Feed Description';
-    $feedData->link = 'https://example.com';
-    $feedItems = [];
+    // Check if response is HTML instead of XML (common issue)
+    if (stripos($originalXml, '<!DOCTYPE html>') !== false || stripos($originalXml, '<html') !== false) {
+        echo "Warning: Response appears to be HTML, not RSS/XML.\n";
 
-    // Try to parse the XML, but handle errors gracefully
-    libxml_use_internal_errors(true);
-    $xml = simplexml_load_string($originalXml);
+        // Create a custom feed with a message about the HTML response
+        $feedData = new stdClass();
+        $feedData->title = 'Custom Feed';
+        $feedData->description = 'Custom RSS feed';
+        $feedData->link = $feedUrl;
 
-    if ($xml !== false) {
-        // Extract feed information
-        if (isset($xml->channel)) {
-            $channel = $xml->channel;
-            $feedData->title = (string)$channel->title;
-            $feedData->description = (string)$channel->description;
-            $feedData->link = (string)$channel->link;
+        $feedItems = [[
+            'title' => 'Error: HTML Response',
+            'link' => $effectiveUrl,
+            'description' => 'The URL returned HTML instead of an RSS feed. This might indicate a login page or error.',
+            'pubDate' => date(DATE_RFC2822),
+            'guid' => uniqid()
+        ]];
+    } else {
+        // Step 2: Parse the original XML to extract its content
+        $feedData = new stdClass();
+        $feedData->title = 'Custom Feed';
+        $feedData->description = 'Custom RSS feed';
+        $feedData->link = $feedUrl;
+        $feedItems = [];
 
-            // Extract items
-            if (isset($channel->item)) {
-                foreach ($channel->item as $item) {
-                    $feedItems[] = [
-                        'title' => (string)$item->title,
-                        'link' => (string)$item->link,
-                        'description' => (string)$item->description,
-                        'pubDate' => (string)$item->pubDate,
-                        'guid' => (string)$item->guid
-                    ];
+        // Try to parse the XML
+        libxml_use_internal_errors(true);
+        $xml = simplexml_load_string($originalXml);
+
+        if ($xml !== false) {
+            // Extract feed information
+            if (isset($xml->channel)) {
+                $channel = $xml->channel;
+                $feedData->title = (string)$channel->title;
+                $feedData->description = (string)$channel->description;
+                $feedData->link = (string)$channel->link;
+
+                // Extract items
+                if (isset($channel->item)) {
+                    foreach ($channel->item as $item) {
+                        $itemData = [
+                            'title' => (string)$item->title,
+                            'link' => (string)$item->link,
+                            'description' => (string)$item->description,
+                            'pubDate' => (string)$item->pubDate,
+                            'guid' => (string)$item->guid
+                        ];
+
+                        // Extract creator if available
+                        foreach ($item->children('dc', true) as $key => $value) {
+                            if ($key == 'creator') {
+                                $itemData['creator'] = (string)$value;
+                            }
+                        }
+
+                        $feedItems[] = $itemData;
+                    }
                 }
             }
-        }
-    } else {
-        // If parse failed, try to extract basic info using regex
-        echo "XML parsing failed, attempting regex-based extraction...\n";
+        } else {
+            // If parse failed, try to extract basic info using regex
+            echo "XML parsing failed, attempting regex-based extraction...\n";
 
-        // Extract feed title
-        if (preg_match('/<title>(.*?)<\/title>/is', $originalXml, $matches)) {
-            $feedData->title = strip_tags($matches[1]);
-        }
+            if (preg_match('/<title>(.*?)<\/title>/is', $originalXml, $matches)) {
+                $feedData->title = strip_tags($matches[1]);
+            }
 
-        // Extract feed description
-        if (preg_match('/<description>(.*?)<\/description>/is', $originalXml, $matches)) {
-            $feedData->description = strip_tags($matches[1]);
-        }
+            if (preg_match('/<description>(.*?)<\/description>/is', $originalXml, $matches)) {
+                $feedData->description = strip_tags($matches[1]);
+            }
 
-        // Extract feed link
-        if (preg_match('/<link>(.*?)<\/link>/is', $originalXml, $matches)) {
-            $feedData->link = trim($matches[1]);
-        }
+            if (preg_match('/<link>(.*?)<\/link>/is', $originalXml, $matches)) {
+                $feedData->link = trim($matches[1]);
+            }
 
-        // Extract items
-        preg_match_all('/<item>(.*?)<\/item>/is', $originalXml, $itemMatches);
-        if (!empty($itemMatches[1])) {
-            foreach ($itemMatches[1] as $itemXml) {
-                $item = [];
+            preg_match_all('/<item>(.*?)<\/item>/is', $originalXml, $itemMatches);
+            if (!empty($itemMatches[1])) {
+                foreach ($itemMatches[1] as $itemXml) {
+                    $item = [];
 
-                // Extract title
-                if (preg_match('/<title>(.*?)<\/title>/is', $itemXml, $matches)) {
-                    $item['title'] = strip_tags($matches[1]);
-                } else {
-                    $item['title'] = 'No Title';
+                    if (preg_match('/<title>(.*?)<\/title>/is', $itemXml, $matches)) {
+                        $item['title'] = strip_tags($matches[1]);
+                    } else {
+                        $item['title'] = 'No Title';
+                    }
+
+                    if (preg_match('/<link>(.*?)<\/link>/is', $itemXml, $matches)) {
+                        $item['link'] = trim($matches[1]);
+                    } else {
+                        $item['link'] = $feedData->link;
+                    }
+
+                    if (preg_match('/<description>(.*?)<\/description>/is', $itemXml, $matches)) {
+                        $item['description'] = $matches[1];
+                    } else {
+                        $item['description'] = 'No description available.';
+                    }
+
+                    if (preg_match('/<pubDate>(.*?)<\/pubDate>/is', $itemXml, $matches)) {
+                        $item['pubDate'] = trim($matches[1]);
+                    } else {
+                        $item['pubDate'] = date(DATE_RFC2822);
+                    }
+
+                    if (preg_match('/<guid.*?>(.*?)<\/guid>/is', $itemXml, $matches)) {
+                        $item['guid'] = trim($matches[1]);
+                    } else {
+                        $item['guid'] = $item['link'];
+                    }
+
+                    if (preg_match('/<dc:creator>(.*?)<\/dc:creator>/is', $itemXml, $matches)) {
+                        $item['creator'] = trim($matches[1]);
+                    }
+
+                    $feedItems[] = $item;
                 }
-
-                // Extract link
-                if (preg_match('/<link>(.*?)<\/link>/is', $itemXml, $matches)) {
-                    $item['link'] = trim($matches[1]);
-                } else {
-                    $item['link'] = $feedData->link;
-                }
-
-                // Extract description
-                if (preg_match('/<description>(.*?)<\/description>/is', $itemXml, $matches)) {
-                    $item['description'] = $matches[1];
-                } else {
-                    $item['description'] = 'No description available.';
-                }
-
-                // Extract pubDate
-                if (preg_match('/<pubDate>(.*?)<\/pubDate>/is', $itemXml, $matches)) {
-                    $item['pubDate'] = trim($matches[1]);
-                } else {
-                    $item['pubDate'] = date(DATE_RFC2822);
-                }
-
-                // Extract guid
-                if (preg_match('/<guid.*?>(.*?)<\/guid>/is', $itemXml, $matches)) {
-                    $item['guid'] = trim($matches[1]);
-                } else {
-                    $item['guid'] = $item['link'];
-                }
-
-                $feedItems[] = $item;
             }
         }
     }
@@ -179,50 +217,48 @@ try {
         ];
     }
 
-    // Step 3: Generate a new XML with proper structure
+    // Add a fallback image only if needed
+    $defaultImage = function($feedUrl) {
+        // Try to get a favicon from the domain
+        $parsedUrl = parse_url($feedUrl);
+        if (isset($parsedUrl['host'])) {
+            $domain = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
+            return $domain . '/favicon.ico';
+        }
+        return 'https://example.com/favicon.ico'; // Generic fallback
+    };
+
+    // Step 3: Generate a new XML with simpler structure for n8n compatibility
     $newXml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-    $newXml .= "<rss version=\"2.0\" xmlns:atom=\"http://www.w3.org/2005/Atom\"";
-    $newXml .= " xmlns:content=\"http://purl.org/rss/1.0/modules/content/\"";
-    $newXml .= " xmlns:dc=\"http://purl.org/dc/elements/1.1/\"";
-    $newXml .= " xmlns:media=\"http://search.yahoo.com/mrss/\">\n";
+    $newXml .= "<rss version=\"2.0\">\n";
 
     // Channel element
     $newXml .= "  <channel>\n";
 
     // Basic channel metadata
-    $newXml .= "    <title><![CDATA[" . cleanText($feedData->title) . "]]></title>\n";
+    $newXml .= "    <title>" . htmlspecialchars($feedData->title) . "</title>\n";
     $newXml .= "    <link>" . htmlspecialchars($feedData->link) . "</link>\n";
-    $newXml .= "    <description><![CDATA[" . cleanText($feedData->description) . "]]></description>\n";
-
-    // Add atom:link
-    $newXml .= "    <atom:link href=\"" . htmlspecialchars($feedUrl) . "\" rel=\"self\" type=\"application/rss+xml\" />\n";
-
-    // Add additional channel information
+    $newXml .= "    <description>" . htmlspecialchars($feedData->description) . "</description>\n";
     $newXml .= "    <language>vi</language>\n";
-    $newXml .= "    <generator>RSS Feed Generator</generator>\n";
     $newXml .= "    <lastBuildDate>" . date(DATE_RFC2822) . "</lastBuildDate>\n";
-    $newXml .= "    <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
 
     // Add items to the feed
     foreach ($feedItems as $item) {
         $newXml .= "    <item>\n";
 
-        // Title with CDATA
+        // Title
         $title = cleanText($item['title'] ?? 'No Title');
-        $newXml .= "      <title><![CDATA[" . $title . "]]></title>\n";
+        $newXml .= "      <title>" . htmlspecialchars($title) . "</title>\n";
 
         // Link
         $link = $item['link'] ?? $feedData->link;
         $newXml .= "      <link>" . htmlspecialchars($link) . "</link>\n";
 
-        // GUID (unique identifier)
-        $guid = $item['guid'] ?? $link;
-        $isPermaLink = $guid === $link ? "true" : "false";
-        $newXml .= "      <guid isPermaLink=\"{$isPermaLink}\">" . htmlspecialchars($guid) . "</guid>\n";
-
-        // Description with CDATA
+        // Description - simplified without HTML
         $description = cleanText($item['description'] ?? 'No description available.');
-        $newXml .= "      <description><![CDATA[" . $description . "]]></description>\n";
+        // Strip HTML tags
+        $description = strip_tags($description);
+        $newXml .= "      <description>" . htmlspecialchars($description) . "</description>\n";
 
         // Publication date
         if (!empty($item['pubDate'])) {
@@ -231,12 +267,15 @@ try {
             $newXml .= "      <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
         }
 
+        // GUID
+        $newXml .= "      <guid>" . htmlspecialchars($link) . "</guid>\n";
+
         $newXml .= "    </item>\n";
     }
 
     // Close channel and rss elements
     $newXml .= "  </channel>\n";
-    $newXml .= "</rss>";
+    $newXml .= "</rss>\n";
 
     // Step 4: Validate the XML
     $isValid = false;
@@ -270,8 +309,7 @@ try {
     echo substr($newXml, 0, 200) . "...\n";
 
     // Provide instructions for use
-    echo "\nTo use this feed, replace your current feed with this one, or update your application to serve this file.\n";
-    echo "You can access it at: " . str_replace(__DIR__, 'http://your-domain.com', $outputFile) . "\n";
+    echo "\nTo use this feed, update your routes to serve this file.\n";
 
 } catch (Exception $e) {
     echo "Error: " . $e->getMessage() . "\n";
