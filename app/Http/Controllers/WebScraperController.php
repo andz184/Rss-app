@@ -583,9 +583,9 @@ class WebScraperController extends Controller
         $xml .= "  <channel>\n";
 
         // Basic channel metadata
-        $xml .= "    <title>" . htmlspecialchars($feed->title) . "</title>\n";
+        $xml .= "    <title><![CDATA[" . $feed->title . "]]></title>\n";
         $xml .= "    <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
-        $xml .= "    <description>" . htmlspecialchars($feed->description) . "</description>\n";
+        $xml .= "    <description><![CDATA[" . $feed->description . "]]></description>\n";
 
         // Add atom:link for feed self-reference
         $feedUrl = url('feeds/scraped/feed_' . $feed->id . '.xml');
@@ -595,7 +595,7 @@ class WebScraperController extends Controller
         if ($favicon) {
             $xml .= "    <image>\n";
             $xml .= "      <url>" . htmlspecialchars($favicon) . "</url>\n";
-            $xml .= "      <title>" . htmlspecialchars($feed->title) . "</title>\n";
+            $xml .= "      <title><![CDATA[" . $feed->title . "]]></title>\n";
             $xml .= "      <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
             $xml .= "    </image>\n";
         }
@@ -611,9 +611,9 @@ class WebScraperController extends Controller
         foreach ($items as $item) {
             $xml .= "    <item>\n";
 
-            // Title
+            // Title with CDATA
             $title = $this->cleanText($item['title'] ?: 'No Title');
-            $xml .= "      <title>" . htmlspecialchars($title) . "</title>\n";
+            $xml .= "      <title><![CDATA[" . $title . "]]></title>\n";
 
             // Link
             $link = $item['link'] ?: $feed->site_url;
@@ -622,23 +622,14 @@ class WebScraperController extends Controller
             // GUID (unique identifier)
             $xml .= "      <guid isPermaLink=\"true\">" . htmlspecialchars($link) . "</guid>\n";
 
-            // Description - use proper CDATA structure
+            // Description with CDATA
             $description = $this->cleanText($item['description'] ?: 'No description available.');
-            // Only use CDATA if the description contains HTML
-            if (strip_tags($description) !== $description) {
-                $xml .= "      <description><![CDATA[" . $description . "]]></description>\n";
-            } else {
-                $xml .= "      <description>" . htmlspecialchars($description) . "</description>\n";
-            }
+            $xml .= "      <description><![CDATA[" . $description . "]]></description>\n";
 
             // Full content with CDATA if different from description
             if (!empty($item['content']) && $item['content'] !== $item['description']) {
                 $content = $this->cleanText($item['content']);
-                if (strip_tags($content) !== $content) {
-                    $xml .= "      <content:encoded><![CDATA[" . $content . "]]></content:encoded>\n";
-                } else {
-                    $xml .= "      <content:encoded>" . htmlspecialchars($content) . "</content:encoded>\n";
-                }
+                $xml .= "      <content:encoded><![CDATA[" . $content . "]]></content:encoded>\n";
             }
 
             // Publication date
@@ -660,13 +651,13 @@ class WebScraperController extends Controller
             // Categories if available
             if (!empty($item['categories'])) {
                 foreach ($item['categories'] as $category) {
-                    $xml .= "      <category>" . htmlspecialchars($category) . "</category>\n";
+                    $xml .= "      <category><![CDATA[" . $category . "]]></category>\n";
                 }
             }
 
             // Author if available
             if (!empty($item['author'])) {
-                $xml .= "      <dc:creator>" . htmlspecialchars($item['author']) . "</dc:creator>\n";
+                $xml .= "      <dc:creator><![CDATA[" . $item['author'] . "]]></dc:creator>\n";
             }
 
             $xml .= "    </item>\n";
@@ -1574,12 +1565,12 @@ class WebScraperController extends Controller
         $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
         $xml .= "<rss version=\"2.0\">\n";
         $xml .= "  <channel>\n";
-        $xml .= "    <title>Error generating RSS feed</title>\n";
+        $xml .= "    <title><![CDATA[Error generating RSS feed]]></title>\n";
         $xml .= "    <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
-        $xml .= "    <description>An error occurred while generating this RSS feed</description>\n";
+        $xml .= "    <description><![CDATA[An error occurred while generating this RSS feed]]></description>\n";
         $xml .= "    <item>\n";
-        $xml .= "      <title>Error Message</title>\n";
-        $xml .= "      <description>" . htmlspecialchars($errorMessage) . "</description>\n";
+        $xml .= "      <title><![CDATA[Error Message]]></title>\n";
+        $xml .= "      <description><![CDATA[" . $errorMessage . "]]></description>\n";
         $xml .= "      <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
         $xml .= "      <guid isPermaLink=\"false\">" . uniqid() . "</guid>\n";
         $xml .= "    </item>\n";
