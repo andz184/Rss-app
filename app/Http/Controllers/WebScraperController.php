@@ -509,7 +509,7 @@ class WebScraperController extends Controller
             if (!$parsedUrl || !isset($parsedUrl['scheme']) || !isset($parsedUrl['host'])) {
                 throw new \Exception('Invalid URL format');
             }
-            
+
             $baseUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
 
             // Extract items from the HTML using the appropriate method
@@ -553,12 +553,12 @@ class WebScraperController extends Controller
                 if (!File::exists($directory)) {
                     File::makeDirectory($directory, 0755, true);
                 }
-                
+
                 $errorXml = $this->generateErrorXML($feed, $e->getMessage());
                 $fileName = 'feed_' . $feed->id . '.xml';
                 $filePath = public_path('feeds/scraped/' . $fileName);
                 File::put($filePath, $errorXml);
-                
+
                 return true;
             } catch (\Exception $innerEx) {
                 Log::error('Failed to create error RSS file: ' . $innerEx->getMessage());
@@ -566,7 +566,7 @@ class WebScraperController extends Controller
             }
         }
     }
-    
+
     /**
      * Tạo nội dung XML đẹp và chuẩn cho RSS feed
      */
@@ -578,59 +578,69 @@ class WebScraperController extends Controller
         $xml .= " xmlns:content=\"http://purl.org/rss/1.0/modules/content/\"";
         $xml .= " xmlns:dc=\"http://purl.org/dc/elements/1.1/\"";
         $xml .= " xmlns:media=\"http://search.yahoo.com/mrss/\">\n";
-        
+
         // Channel element
         $xml .= "  <channel>\n";
-        
+
         // Basic channel metadata
-        $xml .= "    <title><![CDATA[" . $feed->title . "]]></title>\n";
+        $xml .= "    <title>" . htmlspecialchars($feed->title) . "</title>\n";
         $xml .= "    <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
-        $xml .= "    <description><![CDATA[" . $feed->description . "]]></description>\n";
-        
+        $xml .= "    <description>" . htmlspecialchars($feed->description) . "</description>\n";
+
         // Add atom:link for feed self-reference
         $feedUrl = url('feeds/scraped/feed_' . $feed->id . '.xml');
         $xml .= "    <atom:link href=\"" . htmlspecialchars($feedUrl) . "\" rel=\"self\" type=\"application/rss+xml\" />\n";
-        
+
         // Add channel image if favicon is available
         if ($favicon) {
             $xml .= "    <image>\n";
             $xml .= "      <url>" . htmlspecialchars($favicon) . "</url>\n";
-            $xml .= "      <title><![CDATA[" . $feed->title . "]]></title>\n";
+            $xml .= "      <title>" . htmlspecialchars($feed->title) . "</title>\n";
             $xml .= "      <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
             $xml .= "    </image>\n";
         }
-        
+
         // Add additional channel information
         $xml .= "    <language>vi</language>\n";
         $xml .= "    <generator>RSS Feed Generator</generator>\n";
         $xml .= "    <lastBuildDate>" . date(DATE_RFC2822) . "</lastBuildDate>\n";
         $xml .= "    <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
         $xml .= "    <ttl>60</ttl>\n"; // Time to live in minutes
-        
+
         // Add items to the feed
         foreach ($items as $item) {
             $xml .= "    <item>\n";
-            
-            // Title with CDATA
+
+            // Title
             $title = $this->cleanText($item['title'] ?: 'No Title');
-            $xml .= "      <title><![CDATA[" . $title . "]]></title>\n";
-            
+            $xml .= "      <title>" . htmlspecialchars($title) . "</title>\n";
+
             // Link
             $link = $item['link'] ?: $feed->site_url;
             $xml .= "      <link>" . htmlspecialchars($link) . "</link>\n";
-            
+
             // GUID (unique identifier)
             $xml .= "      <guid isPermaLink=\"true\">" . htmlspecialchars($link) . "</guid>\n";
-            
-            // Description with CDATA
+
+            // Description - use proper CDATA structure
             $description = $this->cleanText($item['description'] ?: 'No description available.');
-            $xml .= "      <description><![CDATA[" . $description . "]]></description>\n";
-            
+            // Only use CDATA if the description contains HTML
+            if (strip_tags($description) !== $description) {
+                $xml .= "      <description><![CDATA[" . $description . "]]></description>\n";
+            } else {
+                $xml .= "      <description>" . htmlspecialchars($description) . "</description>\n";
+            }
+
             // Full content with CDATA if different from description
             if (!empty($item['content']) && $item['content'] !== $item['description']) {
-                $xml .= "      <content:encoded><![CDATA[" . $this->cleanText($item['content']) . "]]></content:encoded>\n";
+                $content = $this->cleanText($item['content']);
+                if (strip_tags($content) !== $content) {
+                    $xml .= "      <content:encoded><![CDATA[" . $content . "]]></content:encoded>\n";
+                } else {
+                    $xml .= "      <content:encoded>" . htmlspecialchars($content) . "</content:encoded>\n";
+                }
             }
-            
+
             // Publication date
             if (!empty($item['date'])) {
                 $pubDate = $this->formatDate($item['date']);
@@ -638,37 +648,37 @@ class WebScraperController extends Controller
             } else {
                 $xml .= "      <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
             }
-            
+
             // Image as media:content
             if (!empty($item['image'])) {
                 $xml .= "      <media:content url=\"" . htmlspecialchars($item['image']) . "\" medium=\"image\" />\n";
-                
+
                 // Also add as enclosure for wider compatibility
                 $xml .= "      <enclosure url=\"" . htmlspecialchars($item['image']) . "\" type=\"image/jpeg\" length=\"0\" />\n";
             }
-            
+
             // Categories if available
             if (!empty($item['categories'])) {
                 foreach ($item['categories'] as $category) {
-                    $xml .= "      <category><![CDATA[" . $category . "]]></category>\n";
+                    $xml .= "      <category>" . htmlspecialchars($category) . "</category>\n";
                 }
             }
-            
+
             // Author if available
             if (!empty($item['author'])) {
-                $xml .= "      <dc:creator><![CDATA[" . $item['author'] . "]]></dc:creator>\n";
+                $xml .= "      <dc:creator>" . htmlspecialchars($item['author']) . "</dc:creator>\n";
             }
-            
+
             $xml .= "    </item>\n";
         }
-        
+
         // Close channel and rss elements
         $xml .= "  </channel>\n";
         $xml .= "</rss>";
-        
+
         return $xml;
     }
-    
+
     /**
      * Làm sạch văn bản cho XML
      */
@@ -676,33 +686,68 @@ class WebScraperController extends Controller
     {
         // Loại bỏ các ký tự không hợp lệ trong XML
         $text = preg_replace('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/', '', $text);
-        
+
         // Chuyển đổi các ký tự Unicode hợp lệ
         $text = mb_convert_encoding($text, 'UTF-8', 'UTF-8');
-        
+
         // Đảm bảo HTML hợp lệ (các thẻ đã đóng)
         // Đây chỉ là giải pháp đơn giản, trong thực tế có thể cần xử lý phức tạp hơn
         $text = $this->balanceHtml($text);
-        
+
         return $text;
     }
-    
+
     /**
      * Đảm bảo HTML cân bằng (các thẻ đều đóng mở đúng cách)
      */
     protected function balanceHtml($html)
     {
-        // Danh sách các thẻ cần phải đóng
-        $tags = ['div', 'p', 'span', 'strong', 'em', 'ul', 'ol', 'li', 'table', 'tr', 'td', 'th', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
-        
         // Xóa các thẻ script, style và các thẻ comment
         $html = preg_replace('/<script\b[^>]*>(.*?)<\/script>/is', '', $html);
         $html = preg_replace('/<style\b[^>]*>(.*?)<\/style>/is', '', $html);
         $html = preg_replace('/<!--(.*?)-->/s', '', $html);
-        
-        // Làm sạch HTML bằng cách chuyển đổi các thẻ phức tạp thành văn bản đơn giản
-        // Đây là phương pháp đơn giản, có thể cần sử dụng thư viện HTML chuyên dụng cho xử lý phức tạp hơn
-        
+
+        // Find and remove incomplete tags that could cause XML issues
+        $html = preg_replace('/<[^>]*$/s', '', $html);
+
+        // List of self-closing tags that don't need end tags
+        $selfClosingTags = ['img', 'br', 'hr', 'input', 'meta', 'link', 'source', 'track', 'wbr', 'area', 'base', 'col', 'embed', 'param'];
+
+        // Ensure self-closing tags have proper XML-compatible format (with trailing slash)
+        foreach ($selfClosingTags as $tag) {
+            // Convert <tag attr> to <tag attr />
+            $html = preg_replace('/<(' . $tag . ')([^>]*[^\/>])>/i', '<$1$2 />', $html);
+        }
+
+        // Check for unclosed HTML tags and attempt to close them
+        $openTags = [];
+        preg_match_all('/<([a-z]+)[^>]*>/i', $html, $matches);
+
+        foreach ($matches[1] as $tag) {
+            // Skip self-closing tags
+            if (in_array(strtolower($tag), $selfClosingTags)) {
+                continue;
+            }
+
+            // Add to open tags stack
+            $openTags[] = $tag;
+        }
+
+        preg_match_all('/<\/([a-z]+)>/i', $html, $matches);
+        foreach ($matches[1] as $tag) {
+            // Find and remove the most recent matching open tag
+            $index = array_search($tag, array_reverse($openTags, true));
+            if ($index !== false) {
+                unset($openTags[$index]);
+            }
+        }
+
+        // Close any remaining open tags
+        while (!empty($openTags)) {
+            $tag = array_pop($openTags);
+            $html .= '</' . $tag . '>';
+        }
+
         return $html;
     }
 
@@ -745,7 +790,7 @@ class WebScraperController extends Controller
             // Convert the path selector to XPath-like pattern
             $parts = array_map('trim', explode('>', $selector));
             $pattern = '';
-            
+
             foreach ($parts as $part) {
                 if (substr($part, 0, 1) === '.') {
                     // Class selector
@@ -759,13 +804,13 @@ class WebScraperController extends Controller
                     // Element selector
                     $pattern .= $part;
                 }
-                
+
                 $pattern .= "[^>]*>\\s*";
             }
-            
+
             // Simplified pattern to try to match hierarchical selectors
             preg_match_all("/<{$pattern}(.*?)<\/{$parts[0]}>/is", $html, $matches);
-            
+
             if (!empty($matches[0])) {
                 foreach ($matches[0] as $index => $match) {
                     $itemHtml = $match;
@@ -876,7 +921,7 @@ class WebScraperController extends Controller
             if (strlen($item['title']) < 5) {
                 return false;
             }
-            
+
             // Skip items with common navigation text
             $navigationTexts = ['next', 'prev', 'previous', 'home', 'back', 'forward', 'menu'];
             foreach ($navigationTexts as $navText) {
@@ -884,54 +929,54 @@ class WebScraperController extends Controller
                     return false;
                 }
             }
-            
+
             return true;
         });
-        
+
         // Sort items to show most complete ones first
         usort($items, function($a, $b) {
             // Score each item based on completeness
             $scoreA = 0;
             $scoreB = 0;
-            
+
             // Title has most weight
             if (!empty($a['title']) && $a['title'] !== 'No title') $scoreA += 10;
             if (!empty($b['title']) && $b['title'] !== 'No title') $scoreB += 10;
-            
+
             // Link has second weight
             if (!empty($a['link'])) $scoreA += 5;
             if (!empty($b['link'])) $scoreB += 5;
-            
+
             // Image is valuable
             if (!empty($a['image'])) $scoreA += 3;
             if (!empty($b['image'])) $scoreB += 3;
-            
+
             // Description is also important
             if (!empty($a['description']) && $a['description'] !== 'No description available.') $scoreA += 2;
             if (!empty($b['description']) && $b['description'] !== 'No description available.') $scoreB += 2;
-            
+
             // Date gives slight boost
             if (!empty($a['date'])) $scoreA += 1;
             if (!empty($b['date'])) $scoreB += 1;
-            
+
             // Sort by score (descending)
             return $scoreB - $scoreA;
         });
-        
+
         // Remove duplicate articles (same title and link)
         $uniqueItems = [];
         $seenLinks = [];
         $seenTitles = [];
-        
+
         foreach ($items as $item) {
             $linkHash = md5($item['link']);
             $titleHash = md5($item['title']);
-            
+
             // Skip if we've already seen this link or title
             if (in_array($linkHash, $seenLinks) || (in_array($titleHash, $seenTitles) && strlen($item['title']) > 10)) {
                 continue;
             }
-            
+
             $seenLinks[] = $linkHash;
             $seenTitles[] = $titleHash;
             $uniqueItems[] = $item;
@@ -947,7 +992,7 @@ class WebScraperController extends Controller
     {
         // Check if this is beehiiv platform
         $isBeehiiv = stripos($baseUrl, 'beehiiv.com') !== false;
-        
+
         // Extract title
         $title = 'No title';
 
@@ -984,7 +1029,7 @@ class WebScraperController extends Controller
 
         // Extract link
         $link = $baseUrl;
-        
+
         if ($isBeehiiv) {
             // Special handling for beehiiv platform
             if (preg_match("/<a[^>]*class=[\"'][^\"']*headline-link[^\"']*[\"'][^>]*href=[\"']([^\"']+)[\"'][^>]*>/is", $html, $match)) {
@@ -996,7 +1041,7 @@ class WebScraperController extends Controller
 
         // Extract description
         $description = 'No description available.';
-        
+
         if ($isBeehiiv) {
             // Special handling for beehiiv platform
             if (preg_match("/<div[^>]*class=[\"'][^\"']*summary[^\"']*[\"'][^>]*>(.*?)<\/div>/is", $html, $match)) {
@@ -1010,7 +1055,7 @@ class WebScraperController extends Controller
 
         // Extract image
         $image = '';
-        
+
         if ($isBeehiiv) {
             // Special handling for beehiiv platform
             if (preg_match("/<img[^>]*class=[\"'][^\"']*thumbnail[^\"']*[\"'][^>]*src=[\"']([^\"']+)[\"'][^>]*>/is", $html, $match)) {
@@ -1022,7 +1067,7 @@ class WebScraperController extends Controller
 
         // Extract date (new functionality)
         $date = '';
-        
+
         if ($isBeehiiv) {
             // Special handling for beehiiv platform
             if (preg_match("/<time[^>]*datetime=[\"']([^\"']+)[\"'][^>]*>/is", $html, $match)) {
@@ -1296,9 +1341,9 @@ class WebScraperController extends Controller
                 'site_url' => url('/'),
                 'id' => $feedId
             ]);
-            
+
             $errorXml = $this->generateErrorXML($feed, $e->getMessage());
-            
+
             return response($errorXml)
                 ->header('Content-Type', 'application/rss+xml; charset=utf-8');
         }
@@ -1408,7 +1453,7 @@ class WebScraperController extends Controller
             if ($timestamp) {
                 return date(DATE_RFC2822, $timestamp);
             }
-            
+
             // If the standard parsing fails, try some common Vietnamese date formats
             $viDatePatterns = [
                 '/(\d{1,2})[\/\-\.] ?(\d{1,2})[\/\-\.] ?(\d{4})/' => function($matches) {
@@ -1425,7 +1470,7 @@ class WebScraperController extends Controller
                     $value = intval($matches[1]);
                     $unit = $matches[2];
                     $seconds = 0;
-                    
+
                     switch($unit) {
                         case 'hours':
                             $seconds = $value * 3600;
@@ -1437,7 +1482,7 @@ class WebScraperController extends Controller
                             $seconds = $value * 604800;
                             break;
                     }
-                    
+
                     return time() - $seconds;
                 },
                 // Định dạng tiếng Việt "X giờ trước"
@@ -1445,7 +1490,7 @@ class WebScraperController extends Controller
                     $value = intval($matches[1]);
                     $unit = $matches[2];
                     $seconds = 0;
-                    
+
                     switch($unit) {
                         case 'giờ':
                             $seconds = $value * 3600;
@@ -1457,11 +1502,11 @@ class WebScraperController extends Controller
                             $seconds = $value * 604800;
                             break;
                     }
-                    
+
                     return time() - $seconds;
                 }
             ];
-            
+
             foreach ($viDatePatterns as $pattern => $callback) {
                 if (preg_match($pattern, $dateString, $matches)) {
                     $timestamp = $callback($matches);
@@ -1470,7 +1515,7 @@ class WebScraperController extends Controller
                     }
                 }
             }
-            
+
             // Nếu không thể parse được, trả về thời gian hiện tại
             return date(DATE_RFC2822);
         } catch (\Exception $e) {
@@ -1489,9 +1534,9 @@ class WebScraperController extends Controller
             if (!$parsedUrl) {
                 return null;
             }
-            
+
             $baseUrl = $parsedUrl['scheme'] . '://' . $parsedUrl['host'];
-            
+
             // Standard favicon locations
             $faviconUrls = [
                 $baseUrl . '/favicon.ico',
@@ -1499,7 +1544,7 @@ class WebScraperController extends Controller
                 $baseUrl . '/apple-touch-icon.png',
                 $baseUrl . '/apple-touch-icon-precomposed.png'
             ];
-            
+
             // Try each possible favicon URL
             foreach ($faviconUrls as $faviconUrl) {
                 try {
@@ -1512,7 +1557,7 @@ class WebScraperController extends Controller
                     continue;
                 }
             }
-            
+
             // If no favicon found, return null
             return null;
         } catch (\Exception $e) {
@@ -1534,13 +1579,13 @@ class WebScraperController extends Controller
         $xml .= "    <description>An error occurred while generating this RSS feed</description>\n";
         $xml .= "    <item>\n";
         $xml .= "      <title>Error Message</title>\n";
-        $xml .= "      <description><![CDATA[" . htmlspecialchars($errorMessage) . "]]></description>\n";
+        $xml .= "      <description>" . htmlspecialchars($errorMessage) . "</description>\n";
         $xml .= "      <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
         $xml .= "      <guid isPermaLink=\"false\">" . uniqid() . "</guid>\n";
         $xml .= "    </item>\n";
         $xml .= "  </channel>\n";
         $xml .= "</rss>";
-        
+
         return $xml;
     }
 }
