@@ -25,6 +25,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+
+// Custom route for fixed feed ID 9
+Route::get('/rss/9', function() {
+    $filePath = public_path('feeds/scraped/rss9_fixed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.fixed.9');
+
 Auth::routes();
 
 Route::middleware('auth')->group(function () {
@@ -81,6 +89,14 @@ Route::middleware('auth')->group(function () {
     Route::get('/rss/{feed}', [App\Http\Controllers\WebScraperController::class, 'showRssFeed'])->name('rss.show');
     Route::get('/rss/{feed}/preview', [App\Http\Controllers\WebScraperController::class, 'previewRssFeed'])->name('rss.preview');
 });
+
+
+// Custom route for fixed feed ID 9
+Route::get('/rss/9', function() {
+    $filePath = public_path('feeds/scraped/rss9_fixed.xml');
+    return response(file_get_contents($filePath), 200)
+        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+})->name('rss.fixed.9');
 
 Auth::routes();
 

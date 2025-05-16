@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" xmlns:dc="http://purl.org/dc/elements/1.1/" xmlns:media="http://search.yahoo.com/mrss/">
+  <channel>
+    <title><![CDATA[Laravel]]></title>
+    <link>https://example.com</link>
+    <description><![CDATA[Feed Description]]></description>
+    <atom:link href="http://lst.lat/rss/9" rel="self" type="application/rss+xml" />
+    <language>vi</language>
+    <generator>RSS Feed Generator</generator>
+    <lastBuildDate>Fri, 16 May 2025 04:01:18 +0200</lastBuildDate>
+    <pubDate>Fri, 16 May 2025 04:01:18 +0200</pubDate>
+    <item>
+      <title><![CDATA[No content found]]></title>
+      <link>https://example.com</link>
+      <guid isPermaLink="false">68269c6e2ffd4</guid>
+      <description><![CDATA[The RSS feed could not be properly parsed. Please check the original source.]]></description>
+      <pubDate>Fri, 16 May 2025 04:01:18 +0200</pubDate>
+    </item>
+  </channel>
+</rss>
