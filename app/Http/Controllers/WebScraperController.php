@@ -568,61 +568,126 @@ class WebScraperController extends Controller
     }
 
     /**
-     * Tạo nội dung XML đẹp và chuẩn cho RSS feed
+     * Generate XML for RSS feed
+     *
+     * @param Feed $feed The feed model
+     * @param array $items Array of feed items
+     * @param string|null $favicon Favicon URL
+     * @return string Generated XML
      */
     protected function generateBeautifulXML(Feed $feed, array $items, $favicon = null)
     {
-        // XML declaration and version 2.0 RSS (simpler format for n8n)
-        $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        $xml .= "<rss version=\"2.0\">\n";
+        // Create the feed data structure
+        $rssData = [
+            'channel' => [
+                'title' => $feed->title,
+                'link' => $feed->site_url,
+                'description' => $feed->description,
+                'language' => 'vi',
+                'lastBuildDate' => date(DATE_RFC2822),
+                'item' => []
+            ]
+        ];
 
-        // Channel element
-        $xml .= "  <channel>\n";
-
-        // Basic channel metadata
-        $xml .= "    <title>" . $feed->title . "</title>\n";
-        $xml .= "    <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
-        $xml .= "    <description>" . $feed->description . "</description>\n";
-        $xml .= "    <language>vi</language>\n";
-        $xml .= "    <lastBuildDate>" . date(DATE_RFC2822) . "</lastBuildDate>\n";
-
-        // Add items to the feed using simplified format
+        // Add items to the feed
         foreach ($items as $item) {
-            $xml .= "    <item>\n";
-
-            // Title
             $title = $this->cleanText($item['title'] ?: 'No Title');
-            $xml .= "      <title>" . htmlspecialchars($title) . "</title>\n";
-
-            // Link
             $link = $item['link'] ?: $feed->site_url;
-            $xml .= "      <link>" . htmlspecialchars($link) . "</link>\n";
-
-            // Description - simplified, without images
             $description = $this->cleanText($item['description'] ?: 'No description available.');
-            // Strip any HTML tags for a cleaner description
             $description = strip_tags($description);
-            $xml .= "      <description>" . htmlspecialchars($description) . "</description>\n";
 
-            // Publication date
-            if (!empty($item['date'])) {
-                $pubDate = $this->formatDate($item['date']);
-                $xml .= "      <pubDate>" . $pubDate . "</pubDate>\n";
-            } else {
-                $xml .= "      <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
-            }
+            $itemData = [
+                'title' => $title,
+                'link' => $link,
+                'description' => $description,
+                'guid' => $link,
+                'pubDate' => !empty($item['date']) ? $this->formatDate($item['date']) : date(DATE_RFC2822)
+            ];
 
-            // GUID - use link as identifier
-            $xml .= "      <guid>" . htmlspecialchars($link) . "</guid>\n";
-
-            $xml .= "    </item>\n";
+            $rssData['channel']['item'][] = $itemData;
         }
 
-        // Close channel and rss elements
-        $xml .= "  </channel>\n";
-        $xml .= "</rss>";
+        // Convert array to XML using our custom method
+        return $this->arrayToXml(['rss' => $rssData], '<?xml version="1.0" encoding="UTF-8"?>', ['version' => '2.0']);
+    }
 
-        return $xml;
+    /**
+     * Convert array to XML
+     *
+     * @param array $data The data to convert
+     * @param string $xmlHeader XML header
+     * @param array $rootAttributes Root element attributes
+     * @return string Generated XML
+     */
+    protected function arrayToXml(array $data, string $xmlHeader = '<?xml version="1.0" encoding="UTF-8"?>', array $rootAttributes = [])
+    {
+        $rootElement = key($data);
+        $xml = new \SimpleXMLElement($xmlHeader . '<' . $rootElement . '></' . $rootElement . '>');
+
+        // Add attributes to root element
+        foreach ($rootAttributes as $key => $value) {
+            $xml->addAttribute($key, $value);
+        }
+
+        // Convert array to XML
+        $this->arrayToXmlElement($xml, $data[$rootElement]);
+
+        // Format the XML with LIBXML_NOEMPTYTAG to prevent self-closing tags for better RSS compatibility
+        $dom = new \DOMDocument('1.0', 'UTF-8');
+        $dom->preserveWhiteSpace = false;
+        $dom->formatOutput = true;
+        $dom->loadXML($xml->asXML());
+
+        return $dom->saveXML();
+    }
+
+    /**
+     * Helper function to convert array to XML element
+     *
+     * @param \SimpleXMLElement $xml XML element
+     * @param array $data Data to convert
+     */
+    protected function arrayToXmlElement(\SimpleXMLElement $xml, array $data)
+    {
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                if (is_numeric($key)) {
+                    // If the key is numeric, use the parent element's name in singular
+                    $elementName = $this->getSingular($xml->getName());
+                    $childElement = $xml->addChild($elementName);
+                    $this->arrayToXmlElement($childElement, $value);
+                } else {
+                    // If there are multiple elements with the same name
+                    if (isset($value[0]) && is_array($value[0])) {
+                        foreach ($value as $subValue) {
+                            $childElement = $xml->addChild($key);
+                            $this->arrayToXmlElement($childElement, $subValue);
+                        }
+                    } else {
+                        $childElement = $xml->addChild($key);
+                        $this->arrayToXmlElement($childElement, $value);
+                    }
+                }
+            } else {
+                // Add single element with CDATA for values containing special characters
+                $value = htmlspecialchars($value);
+                $xml->addChild($key, $value);
+            }
+        }
+    }
+
+    /**
+     * Get singular form of a word (simple implementation)
+     *
+     * @param string $word Word to convert
+     * @return string Singular form
+     */
+    protected function getSingular($word)
+    {
+        if (substr($word, -1) === 's') {
+            return substr($word, 0, -1);
+        }
+        return $word;
     }
 
     /**
@@ -1068,7 +1133,7 @@ class WebScraperController extends Controller
     }
 
     /**
-     * Serve the scraped RSS feed
+     * Show the RSS feed in XML format (public endpoint)
      */
     public function serveScrapedFeed($feed)
     {
@@ -1084,19 +1149,26 @@ class WebScraperController extends Controller
                 abort(404, 'This is not a scraped feed');
             }
 
+            // Check if we need to regenerate feed or serve directly
+            if ($this->shouldGenerateFeed($feed)) {
+                // Generate the feed data
+                return $this->serveDirectXmlFeed($feed);
+            }
+
             // Get the feed file path
             $fileName = 'feed_' . $feed->id . '.xml';
             $filePath = public_path('feeds/scraped/' . $fileName);
 
-            // If file doesn't exist, regenerate it
+            // If file doesn't exist, serve directly
             if (!File::exists($filePath)) {
-                if (!$this->generateScrapedFeedFile($feed)) {
-                    abort(500, 'Failed to generate RSS feed');
-                }
+                return $this->serveDirectXmlFeed($feed);
             }
 
-            // Return the RSS feed with proper content type
-            return response(File::get($filePath), 200)
+            // Read the feed content
+            $feedContent = File::get($filePath);
+
+            // Return XML response with proper content type
+            return response($feedContent, 200)
                 ->header('Content-Type', 'application/rss+xml; charset=utf-8');
         } catch (\Exception $e) {
             Log::error('Error serving scraped feed: ' . $e->getMessage(), [
@@ -1105,6 +1177,130 @@ class WebScraperController extends Controller
 
             abort(500, 'Error serving RSS feed: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Serve RSS feed directly using XML response
+     * This generates the feed data on-the-fly without saving to file
+     *
+     * @param Feed $feed The feed model
+     * @return \Illuminate\Http\Response
+     */
+    protected function serveDirectXmlFeed(Feed $feed)
+    {
+        try {
+            // Get the base URL
+            $baseUrl = $feed->site_url;
+
+            // Download the page content
+            $response = Http::timeout(30)->get($baseUrl);
+            if ($response->failed()) {
+                return $this->serveErrorXml($feed, 'Failed to fetch content: ' . $response->status());
+            }
+
+            $html = $response->body();
+
+            // Get the CSS selector for items
+            $selector = $feed->css_selector ?? null;
+            if (empty($selector)) {
+                return $this->serveErrorXml($feed, 'No CSS selector defined for this feed.');
+            }
+
+            // Extract items
+            $items = $this->extractItemsWithRegex($html, $selector, $baseUrl);
+
+            // Check if we have any items
+            if (empty($items)) {
+                return $this->serveErrorXml($feed, 'No items found with selector: ' . $selector);
+            }
+
+            // Get favicon if available
+            $favicon = $this->getFaviconUrl($baseUrl);
+
+            // Generate XML
+            $rssData = [
+                'channel' => [
+                    'title' => $feed->title,
+                    'link' => $feed->site_url,
+                    'description' => $feed->description,
+                    'language' => 'vi',
+                    'lastBuildDate' => date(DATE_RFC2822),
+                    'item' => []
+                ]
+            ];
+
+            // Add items to the feed
+            foreach ($items as $item) {
+                $title = $this->cleanText($item['title'] ?: 'No Title');
+                $link = $item['link'] ?: $feed->site_url;
+                $description = $this->cleanText($item['description'] ?: 'No description available.');
+                $description = strip_tags($description);
+
+                $itemData = [
+                    'title' => $title,
+                    'link' => $link,
+                    'description' => $description,
+                    'guid' => $link,
+                    'pubDate' => !empty($item['date']) ? $this->formatDate($item['date']) : date(DATE_RFC2822)
+                ];
+
+                $rssData['channel']['item'][] = $itemData;
+            }
+
+            // Convert to XML
+            $xml = $this->arrayToXml(['rss' => $rssData], '<?xml version="1.0" encoding="UTF-8"?>', ['version' => '2.0']);
+
+            // Return XML response
+            return response($xml, 200)
+                ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+
+        } catch (\Exception $e) {
+            Log::error('Error generating direct XML feed: ' . $e->getMessage(), [
+                'feed_id' => $feed->id ?? 'unknown'
+            ]);
+
+            return $this->serveErrorXml($feed, 'Error generating RSS feed: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Serve error XML response
+     *
+     * @param Feed $feed The feed model
+     * @param string $errorMessage Error message
+     * @return \Illuminate\Http\Response
+     */
+    protected function serveErrorXml(Feed $feed, $errorMessage)
+    {
+        $xml = $this->generateErrorXML($feed, $errorMessage);
+
+        return response($xml, 200)
+            ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+    }
+
+    /**
+     * Check if we should generate feed on-the-fly
+     *
+     * @param Feed $feed The feed model
+     * @return bool
+     */
+    protected function shouldGenerateFeed(Feed $feed)
+    {
+        // Get the feed file path
+        $fileName = 'feed_' . $feed->id . '.xml';
+        $filePath = public_path('feeds/scraped/' . $fileName);
+
+        // If file doesn't exist, generate it
+        if (!File::exists($filePath)) {
+            return true;
+        }
+
+        // Check if file is too old
+        $fileTime = filemtime($filePath);
+        $metadata = json_decode($feed->metadata, true) ?? [];
+        $frequency = $metadata['update_frequency'] ?? 60; // Default to 60 minutes
+
+        return (time() - $fileTime) > ($frequency * 60);
     }
 
     /**
@@ -1526,27 +1722,27 @@ class WebScraperController extends Controller
      */
     protected function generateErrorXML(Feed $feed, $errorMessage)
     {
-        // XML declaration and version 2.0 RSS (simpler format for n8n)
-        $xml = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n";
-        $xml .= "<rss version=\"2.0\">\n";
-        $xml .= "  <channel>\n";
-        $xml .= "    <title>Error generating RSS feed</title>\n";
-        $xml .= "    <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
-        $xml .= "    <description>An error occurred while generating this RSS feed</description>\n";
-        $xml .= "    <language>vi</language>\n";
-        $xml .= "    <lastBuildDate>" . date(DATE_RFC2822) . "</lastBuildDate>\n";
+        // Create the error feed data structure
+        $rssData = [
+            'channel' => [
+                'title' => 'Error generating RSS feed',
+                'link' => $feed->site_url,
+                'description' => 'An error occurred while generating this RSS feed',
+                'language' => 'vi',
+                'lastBuildDate' => date(DATE_RFC2822),
+                'item' => [
+                    [
+                        'title' => 'Error Message',
+                        'link' => $feed->site_url,
+                        'description' => $errorMessage,
+                        'pubDate' => date(DATE_RFC2822),
+                        'guid' => $feed->site_url
+                    ]
+                ]
+            ]
+        ];
 
-        // Error item
-        $xml .= "    <item>\n";
-        $xml .= "      <title>Error Message</title>\n";
-        $xml .= "      <link>" . htmlspecialchars($feed->site_url) . "</link>\n";
-        $xml .= "      <description>" . htmlspecialchars($errorMessage) . "</description>\n";
-        $xml .= "      <pubDate>" . date(DATE_RFC2822) . "</pubDate>\n";
-        $xml .= "      <guid>" . htmlspecialchars($feed->site_url) . "</guid>\n";
-        $xml .= "    </item>\n";
-        $xml .= "  </channel>\n";
-        $xml .= "</rss>";
-
-        return $xml;
+        // Convert to XML
+        return $this->arrayToXml(['rss' => $rssData], '<?xml version="1.0" encoding="UTF-8"?>', ['version' => '2.0']);
     }
 }
