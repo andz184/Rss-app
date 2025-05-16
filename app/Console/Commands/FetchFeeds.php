@@ -14,14 +14,14 @@ class FetchFeeds extends Command
      *
      * @var string
      */
-    protected $signature = 'feeds:fetch {--feed=} {--all}';
+    protected $signature = 'feeds:fetch {--feed_id= : Cập nhật một nguồn tin cụ thể}';
 
     /**
      * The console command description.
      *
      * @var string
      */
-    protected $description = 'Fetch RSS feeds and update articles';
+    protected $description = 'Cập nhật tất cả nguồn tin RSS đang hoạt động';
 
     /**
      * The feed service instance.
@@ -42,13 +42,7 @@ class FetchFeeds extends Command
      */
     public function handle(): int
     {
-        $feedId = $this->option('feed');
-        $all = $this->option('all');
-
-        if (!$feedId && !$all) {
-            $this->error('You must specify --feed=[id] or --all');
-            return 1;
-        }
+        $feedId = $this->option('feed_id');
 
         if ($feedId) {
             $feed = Feed::find($feedId);

@@ -12,9 +12,9 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule): void
     {
-        // Cập nhật tất cả nguồn tin RSS mỗi 12 giờ
+        // Cập nhật tất cả nguồn tin RSS mỗi 30 phút
         $schedule->command('feeds:fetch')
-                 ->twiceDaily(0, 12) // Chạy vào 00:00 và 12:00
+                 ->everyThirtyMinutes()
                  ->withoutOverlapping()
                  ->appendOutputTo(storage_path('logs/feed-fetch.log'));
     }
