@@ -49,6 +49,10 @@ Route::get('/rss/test', function() {
         ->header('Content-Type', 'application/rss+xml; charset=utf-8');
 })->name('rss.test');
 
+// RSS Feed JSON routes (public API endpoints)
+Route::get('/rss/{feed}', [App\Http\Controllers\WebScraperController::class, 'showRssFeed'])->name('rss.show');
+Route::get('/feeds/scraped/{feed}', [App\Http\Controllers\WebScraperController::class, 'serveScrapedFeed'])->name('web-scraper.serve');
+
 Auth::routes();
 
 Route::middleware('auth')->group(function () {
@@ -98,41 +102,9 @@ Route::middleware('auth')->group(function () {
     Route::get('web-scraper/rss-creator', [App\Http\Controllers\WebScraperController::class, 'showRssCreator'])->name('web-scraper.rss-creator');
     Route::post('web-scraper/generate-rss', [App\Http\Controllers\WebScraperController::class, 'generateRssFeed'])->name('web-scraper.generate-rss');
 
-    // Route to serve scraped RSS feeds
-    Route::get('/feeds/scraped/{feed}', [App\Http\Controllers\WebScraperController::class, 'serveScrapedFeed'])->name('web-scraper.serve');
-
-    // RSS Feed preview and XML routes
-    Route::get('/rss/{feed}', [App\Http\Controllers\WebScraperController::class, 'showRssFeed'])->name('rss.show');
+    // RSS Feed preview
     Route::get('/rss/{feed}/preview', [App\Http\Controllers\WebScraperController::class, 'previewRssFeed'])->name('rss.preview');
 });
-
-
-// Custom route for fixed feed ID 9
-Route::get('/rss/9', function() {
-    $filePath = public_path('feeds/scraped/rss9_fixed.xml');
-    return response(file_get_contents($filePath), 200)
-        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-})->name('rss.fixed.9');
-
-
-// Custom route for reference feed
-Route::get('/rss/reference', function() {
-    $filePath = public_path('feeds/scraped/custom_feed.xml');
-    return response(file_get_contents($filePath), 200)
-        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-})->name('rss.reference');
-
-
-// Custom route for test feed
-Route::get('/rss/test', function() {
-    $filePath = public_path('feeds/scraped/test_feed.xml');
-    return response(file_get_contents($filePath), 200)
-        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-})->name('rss.test');
-
-Auth::routes();
-
-Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
 // Route kiểm tra Python
 Route::get('/kiem-tra-python', function () {
@@ -167,9 +139,41 @@ Route::get('/screenshots-gallery', function () {
     return File::get(base_path('display_screenshot.php'));
 });
 
-// Custom route for simple feed example (for n8n compatibility)
+// Custom route for simple feed example with JSON format
 Route::get('/rss/simple', function() {
     $filePath = public_path('feeds/scraped/simple_feed.xml');
-    return response(file_get_contents($filePath), 200)
-        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+    try {
+        $xmlContent = file_get_contents($filePath);
+        $xml = simplexml_load_string($xmlContent);
+
+        if ($xml && isset($xml->channel)) {
+            $channel = $xml->channel;
+            $feedData = [
+                'title' => (string)$channel->title,
+                'link' => (string)$channel->link,
+                'description' => (string)$channel->description,
+                'language' => (string)$channel->language,
+                'lastBuildDate' => (string)$channel->lastBuildDate,
+                'items' => []
+            ];
+
+            if (isset($channel->item)) {
+                foreach ($channel->item as $item) {
+                    $feedData['items'][] = [
+                        'title' => (string)$item->title,
+                        'link' => (string)$item->link,
+                        'description' => (string)$item->description,
+                        'pubDate' => (string)$item->pubDate,
+                        'guid' => (string)$item->guid
+                    ];
+                }
+            }
+
+            return response()->json($feedData);
+        } else {
+            return response()->json(['error' => 'Invalid XML format'], 500);
+        }
+    } catch (\Exception $e) {
+        return response()->json(['error' => 'Failed to process feed: ' . $e->getMessage()], 500);
+    }
 })->name('rss.simple');

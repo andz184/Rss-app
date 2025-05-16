@@ -22,7 +22,7 @@ class WebScraperController extends Controller
     public function __construct(FeedService $feedService)
     {
         $this->feedService = $feedService;
-        $this->middleware('auth');
+        $this->middleware('auth')->except(['serveScrapedFeed', 'showRssFeed']);
     }
 
     /**
@@ -1133,7 +1133,7 @@ class WebScraperController extends Controller
     }
 
     /**
-     * Show the RSS feed in XML format (public endpoint)
+     * Show the RSS feed in JSON format (public endpoint)
      */
     public function serveScrapedFeed($feed)
     {
@@ -1146,13 +1146,15 @@ class WebScraperController extends Controller
 
             // Check if the feed is a scraped feed
             if (!$feed->is_scraped) {
-                abort(404, 'This is not a scraped feed');
+                return response()->json([
+                    'error' => 'This is not a scraped feed'
+                ], 404);
             }
 
             // Check if we need to regenerate feed or serve directly
             if ($this->shouldGenerateFeed($feed)) {
-                // Generate the feed data
-                return $this->serveDirectXmlFeed($feed);
+                // Generate the feed data directly
+                return $this->serveDirectJsonFeed($feed);
             }
 
             // Get the feed file path
@@ -1161,32 +1163,65 @@ class WebScraperController extends Controller
 
             // If file doesn't exist, serve directly
             if (!File::exists($filePath)) {
-                return $this->serveDirectXmlFeed($feed);
+                return $this->serveDirectJsonFeed($feed);
             }
 
-            // Read the feed content
-            $feedContent = File::get($filePath);
+            // Parse XML file to create JSON data
+            try {
+                $xmlContent = File::get($filePath);
+                $xml = simplexml_load_string($xmlContent);
 
-            // Return XML response with proper content type
-            return response($feedContent, 200)
-                ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+                if ($xml && isset($xml->channel)) {
+                    $channel = $xml->channel;
+                    $feedData = [
+                        'title' => (string)$channel->title,
+                        'link' => (string)$channel->link,
+                        'description' => (string)$channel->description,
+                        'language' => (string)$channel->language,
+                        'lastBuildDate' => (string)$channel->lastBuildDate,
+                        'items' => []
+                    ];
+
+                    if (isset($channel->item)) {
+                        foreach ($channel->item as $item) {
+                            $feedData['items'][] = [
+                                'title' => (string)$item->title,
+                                'link' => (string)$item->link,
+                                'description' => (string)$item->description,
+                                'pubDate' => (string)$item->pubDate,
+                                'guid' => (string)$item->guid
+                            ];
+                        }
+                    }
+
+                    return response()->json($feedData);
+                }
+            } catch (\Exception $e) {
+                // If XML parsing fails, regenerate as JSON directly
+                return $this->serveDirectJsonFeed($feed);
+            }
+
+            // Fallback to direct JSON feed if parsing fails
+            return $this->serveDirectJsonFeed($feed);
         } catch (\Exception $e) {
             Log::error('Error serving scraped feed: ' . $e->getMessage(), [
                 'feed_id' => $feed->id ?? 'unknown'
             ]);
 
-            abort(500, 'Error serving RSS feed: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error serving RSS feed: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     /**
-     * Serve RSS feed directly using XML response
+     * Serve RSS feed directly using JSON response
      * This generates the feed data on-the-fly without saving to file
      *
      * @param Feed $feed The feed model
      * @return \Illuminate\Http\Response
      */
-    protected function serveDirectXmlFeed(Feed $feed)
+    protected function serveDirectJsonFeed(Feed $feed)
     {
         try {
             // Get the base URL
@@ -1195,7 +1230,9 @@ class WebScraperController extends Controller
             // Download the page content
             $response = Http::timeout(30)->get($baseUrl);
             if ($response->failed()) {
-                return $this->serveErrorXml($feed, 'Failed to fetch content: ' . $response->status());
+                return response()->json([
+                    'error' => 'Failed to fetch content: ' . $response->status()
+                ], 500);
             }
 
             $html = $response->body();
@@ -1203,7 +1240,9 @@ class WebScraperController extends Controller
             // Get the CSS selector for items
             $selector = $feed->css_selector ?? null;
             if (empty($selector)) {
-                return $this->serveErrorXml($feed, 'No CSS selector defined for this feed.');
+                return response()->json([
+                    'error' => 'No CSS selector defined for this feed.'
+                ], 500);
             }
 
             // Extract items
@@ -1211,22 +1250,22 @@ class WebScraperController extends Controller
 
             // Check if we have any items
             if (empty($items)) {
-                return $this->serveErrorXml($feed, 'No items found with selector: ' . $selector);
+                return response()->json([
+                    'error' => 'No items found with selector: ' . $selector
+                ], 500);
             }
 
             // Get favicon if available
             $favicon = $this->getFaviconUrl($baseUrl);
 
-            // Generate XML
-            $rssData = [
-                'channel' => [
-                    'title' => $feed->title,
-                    'link' => $feed->site_url,
-                    'description' => $feed->description,
-                    'language' => 'vi',
-                    'lastBuildDate' => date(DATE_RFC2822),
-                    'item' => []
-                ]
+            // Generate JSON feed data
+            $feedData = [
+                'title' => $feed->title,
+                'link' => $feed->site_url,
+                'description' => $feed->description,
+                'language' => 'vi',
+                'lastBuildDate' => date(DATE_RFC2822),
+                'items' => []
             ];
 
             // Add items to the feed
@@ -1236,71 +1275,88 @@ class WebScraperController extends Controller
                 $description = $this->cleanText($item['description'] ?: 'No description available.');
                 $description = strip_tags($description);
 
-                $itemData = [
+                $feedData['items'][] = [
                     'title' => $title,
                     'link' => $link,
                     'description' => $description,
                     'guid' => $link,
                     'pubDate' => !empty($item['date']) ? $this->formatDate($item['date']) : date(DATE_RFC2822)
                 ];
-
-                $rssData['channel']['item'][] = $itemData;
             }
 
-            // Convert to XML
-            $xml = $this->arrayToXml(['rss' => $rssData], '<?xml version="1.0" encoding="UTF-8"?>', ['version' => '2.0']);
-
-            // Return XML response
-            return response($xml, 200)
-                ->header('Content-Type', 'application/rss+xml; charset=utf-8');
+            // Return JSON response
+            return response()->json($feedData);
 
         } catch (\Exception $e) {
-            Log::error('Error generating direct XML feed: ' . $e->getMessage(), [
+            Log::error('Error generating direct JSON feed: ' . $e->getMessage(), [
                 'feed_id' => $feed->id ?? 'unknown'
             ]);
 
-            return $this->serveErrorXml($feed, 'Error generating RSS feed: ' . $e->getMessage());
+            return response()->json([
+                'error' => 'Error generating RSS feed: ' . $e->getMessage()
+            ], 500);
         }
     }
 
     /**
-     * Serve error XML response
-     *
-     * @param Feed $feed The feed model
-     * @param string $errorMessage Error message
-     * @return \Illuminate\Http\Response
+     * Show the RSS feed in JSON format (public endpoint)
      */
-    protected function serveErrorXml(Feed $feed, $errorMessage)
+    public function showRssFeed($feedId)
     {
-        $xml = $this->generateErrorXML($feed, $errorMessage);
+        // Special case for problematic feed ID 9
+        if ($feedId == 9) {
+            $filePath = public_path('feeds/scraped/rss9_fixed.xml');
+            if (file_exists($filePath)) {
+                try {
+                    $xmlContent = file_get_contents($filePath);
+                    $xml = simplexml_load_string($xmlContent);
 
-        return response($xml, 200)
-            ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-    }
+                    if ($xml && isset($xml->channel)) {
+                        $channel = $xml->channel;
+                        $feedData = [
+                            'title' => (string)$channel->title,
+                            'link' => (string)$channel->link,
+                            'description' => (string)$channel->description,
+                            'language' => (string)$channel->language,
+                            'lastBuildDate' => (string)$channel->lastBuildDate,
+                            'items' => []
+                        ];
 
-    /**
-     * Check if we should generate feed on-the-fly
-     *
-     * @param Feed $feed The feed model
-     * @return bool
-     */
-    protected function shouldGenerateFeed(Feed $feed)
-    {
-        // Get the feed file path
-        $fileName = 'feed_' . $feed->id . '.xml';
-        $filePath = public_path('feeds/scraped/' . $fileName);
+                        if (isset($channel->item)) {
+                            foreach ($channel->item as $item) {
+                                $feedData['items'][] = [
+                                    'title' => (string)$item->title,
+                                    'link' => (string)$item->link,
+                                    'description' => (string)$item->description,
+                                    'pubDate' => (string)$item->pubDate,
+                                    'guid' => (string)$item->guid
+                                ];
+                            }
+                        }
 
-        // If file doesn't exist, generate it
-        if (!File::exists($filePath)) {
-            return true;
+                        return response()->json($feedData);
+                    }
+                } catch (\Exception $e) {
+                    // Fall through to regular handling if XML parsing fails
+                }
+            }
         }
 
-        // Check if file is too old
-        $fileTime = filemtime($filePath);
-        $metadata = json_decode($feed->metadata, true) ?? [];
-        $frequency = $metadata['update_frequency'] ?? 60; // Default to 60 minutes
+        try {
+            $feed = Feed::findOrFail($feedId);
 
-        return (time() - $fileTime) > ($frequency * 60);
+            return $this->serveScrapedFeed($feed);
+
+        } catch (\Exception $e) {
+            Log::error('Error showing RSS feed: ' . $e->getMessage(), [
+                'feed_id' => $feedId,
+                'exception' => $e
+            ]);
+
+            return response()->json([
+                'error' => 'Error generating feed: ' . $e->getMessage()
+            ], 404);
+        }
     }
 
     /**
@@ -1445,59 +1501,6 @@ class WebScraperController extends Controller
             ->count();
 
         return view('help.rss-guide', compact('categories', 'feeds', 'unreadCount', 'favoritesCount'));
-    }
-
-    /**
-     * Show the RSS feed in XML format (public endpoint)
-     */
-    public function showRssFeed($feedId)
-    {
-        // Special case for problematic feed ID 9
-        if ($feedId == 9) {
-            $filePath = public_path('feeds/scraped/rss9_fixed.xml');
-            if (file_exists($filePath)) {
-                return response(file_get_contents($filePath), 200)
-                    ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-            }
-        }
-
-        try {
-            $feed = Feed::findOrFail($feedId);
-
-            // Get the feed file path
-            $fileName = 'feed_' . $feed->id . '.xml';
-            $filePath = public_path('feeds/scraped/' . $fileName);
-
-            // If file doesn't exist, regenerate it
-            if (!File::exists($filePath)) {
-                if (!$this->generateScrapedFeedFile($feed)) {
-                    // If generation fails, return a simple error RSS feed
-                    $errorXml = $this->generateErrorXML($feed, 'Failed to generate RSS feed');
-                    return response($errorXml)
-                        ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-                }
-            }
-
-            // Return the RSS feed with proper content type
-            return response(File::get($filePath), 200)
-                ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-        } catch (\Exception $e) {
-            Log::error('Error showing RSS feed: ' . $e->getMessage(), [
-                'feed_id' => $feedId,
-                'exception' => $e
-            ]);
-
-            // Return a valid RSS feed with error information
-            $feed = new Feed([
-                'site_url' => url('/'),
-                'id' => $feedId
-            ]);
-
-            $errorXml = $this->generateErrorXML($feed, $e->getMessage());
-
-            return response($errorXml)
-                ->header('Content-Type', 'application/rss+xml; charset=utf-8');
-        }
     }
 
     /**
@@ -1744,5 +1747,30 @@ class WebScraperController extends Controller
 
         // Convert to XML
         return $this->arrayToXml(['rss' => $rssData], '<?xml version="1.0" encoding="UTF-8"?>', ['version' => '2.0']);
+    }
+
+    /**
+     * Check if we should generate feed on-the-fly
+     *
+     * @param Feed $feed The feed model
+     * @return bool
+     */
+    protected function shouldGenerateFeed(Feed $feed)
+    {
+        // Get the feed file path
+        $fileName = 'feed_' . $feed->id . '.xml';
+        $filePath = public_path('feeds/scraped/' . $fileName);
+
+        // If file doesn't exist, generate it
+        if (!File::exists($filePath)) {
+            return true;
+        }
+
+        // Check if file is too old
+        $fileTime = filemtime($filePath);
+        $metadata = json_decode($feed->metadata, true) ?? [];
+        $frequency = $metadata['update_frequency'] ?? 60; // Default to 60 minutes
+
+        return (time() - $fileTime) > ($frequency * 60);
     }
 }
