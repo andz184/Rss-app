@@ -1,37 +1,29 @@
-# Test Login System Guide
+# Test Login and Registration System Guide
 
-This document explains how to use the test login system for API testing purposes.
+This document explains how to use the test login and registration system for API testing purposes.
 
 ## Overview
 
-A secondary login form has been created entirely separate from the main login system. This test login form provides two login methods:
+Secondary login and registration forms have been created for testing third-party authentication APIs. These test forms provide:
 
-1. Standard web form login (using Laravel's authentication)
-2. API-based login (using JWT authentication)
+1. Standard web form authentication (using Laravel's authentication)
+2. External API-based authentication with aiemployee.site with visible API responses
 
-## Accessing the Test Login Form
+## Accessing the Test Forms
 
-The test login form is available at:
+- Test Login Form: `/test-login`
+- Test Registration Form: `/test-register`
 
-```
-/test-login
-```
+## External API Authentication
 
-## Authentication Methods
+The "Login via External API" and "Register via External API" buttons send requests to the external API endpoints:
 
-### Web Form Login
-
-The web form login uses the standard Laravel authentication system. It submits the form to the server and uses session-based authentication.
-
-### API Login
-
-The API Login button sends a POST request to the API endpoint using fetch API:
+#### Login API
 
 ```
-POST /api/auth/login
+POST https://aiemployee.site/api/auth/login
 Content-Type: application/json
 Accept: application/json
-X-CSRF-TOKEN: {{csrf_token}}
 
 {
   "email": "your-email@example.com",
@@ -39,23 +31,59 @@ X-CSRF-TOKEN: {{csrf_token}}
 }
 ```
 
-The API responds with:
+#### Register API
 
-```json
+```
+POST https://aiemployee.site/api/auth/register
+Content-Type: application/json
+Accept: application/json
+
 {
-  "access_token": "eyJ0eXAiOiJKV1QiLC...",
-  "token_type": "bearer",
-  "expires_in": 3600,
-  "user": {
-    "id": 1,
-    "name": "User Name",
-    "email": "your-email@example.com",
-    ...
-  }
+  "name": "Your Name",
+  "email": "your-email@example.com",
+  "password": "your-password",
+  "password_confirmation": "your-password"
 }
 ```
 
-On successful API login, the access token and user information are stored in localStorage and the user is redirected to the home page.
+## API Response Display
+
+A key feature of these test forms is the ability to see the API response directly on the page. When you use the "Login via External API" or "Register via External API" buttons:
+
+1. The form makes an API call to the respective endpoint
+2. A response card appears below the form with:
+   - HTTP status code badge (color-coded by status type)
+   - Full JSON response in a scrollable pre-formatted container
+   - Copy Access Token button (appears when authentication succeeds)
+3. If successful, the JWT token is stored in localStorage
+
+This feature makes it easy to:
+- Debug API issues
+- Verify API functionality
+- See exactly what the API returns
+- Copy access tokens for use in other applications
+- Confirm authentication works correctly
+
+## Error Handling
+
+The forms include comprehensive error handling:
+- Input validation before submission
+- Proper display of network errors
+- Handling of invalid JSON responses
+- Clear status code indication
+- Detailed error messages
+
+## How to Test the API
+
+1. Fill in the form with valid credentials
+2. Click the "Login via External API" or "Register via External API" button
+3. View the API response in the card below
+4. If successful, use the "Copy Access Token" button to copy the JWT token
+5. Use the token in your applications as needed
+
+## CORS Considerations
+
+The external API endpoints have been configured to allow cross-origin requests from your application. No CSRF token is needed for these external API calls.
 
 ## API Documentation
 
@@ -91,8 +119,8 @@ Based on the Google Doc shared, the API authentication endpoints are:
 - **Headers**: Authorization: Bearer {token}
 - **Response**: New JWT token
 
-## Test Login Implementation
+## Test Implementation Details
 
-The test login form is implemented with Bootstrap floating labels and a modern UI design that's distinct from the main login form. It provides clear error messages and includes links to password reset and registration pages.
+Both forms are implemented with Bootstrap floating labels and modern UI design distinct from the main authentication forms. They provide clear error messages and include validation and cross-navigation between the forms.
 
-The JavaScript portion of the implementation handles the API login process, making it easy to test API authentication without writing custom code. 
+The JavaScript portions of these implementations handle the API authentication process and response display, making it easy to test API endpoints without writing custom code. 
