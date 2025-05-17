@@ -6,6 +6,7 @@ use App\Http\Controllers\ArticleController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\FeedController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\Auth\TestLoginController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
@@ -25,6 +26,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+// Test login routes
+Route::get('/test-login', [TestLoginController::class, 'showLoginForm'])->name('test.login');
+Route::post('/test-login', [TestLoginController::class, 'login'])->name('test.login.submit');
 
 // Custom route for fixed feed ID 9
 Route::get('/rss/9', function() {
