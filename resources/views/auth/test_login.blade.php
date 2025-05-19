@@ -7,7 +7,7 @@
             <div class="card shadow-lg border-0 rounded-lg mt-5">
                 <div class="card-header bg-primary text-white">
                     <h3 class="text-center font-weight-light my-2">Test Login</h3>
-                    <div class="text-center text-white small">Using external API: aiemployee.site</div>
+                    <div class="text-center text-white small">Using external API via proxy: aiemployee.site</div>
                 </div>
                 <div class="card-body">
                     <form method="POST" action="{{ route('test.login.submit') }}" id="testLoginForm">
@@ -97,15 +97,16 @@ document.addEventListener('DOMContentLoaded', function() {
         // Show loading state
         apiResponseCard.classList.remove('d-none');
         apiResponseActions.style.display = 'none';
-        apiResponseData.textContent = 'Sending request to https://aiemployee.site/api/auth/login...';
+        apiResponseData.textContent = 'Sending request via proxy to aiemployee.site API...';
         statusBadge.textContent = 'Pending';
         statusBadge.className = 'badge bg-warning';
 
-        fetch('https://aiemployee.site/api/auth/login', {
+        fetch('/api/proxy/auth/login', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'Accept': 'application/json'
+                'Accept': 'application/json',
+                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
             },
             body: JSON.stringify({
                 email: email,

@@ -7,23 +7,28 @@ This document explains how to use the test login and registration system for API
 Secondary login and registration forms have been created for testing third-party authentication APIs. These test forms provide:
 
 1. Standard web form authentication (using Laravel's authentication)
-2. External API-based authentication with aiemployee.site with visible API responses
+2. External API-based authentication with aiemployee.site via a proxy to bypass CORS restrictions
 
 ## Accessing the Test Forms
 
 - Test Login Form: `/test-login`
 - Test Registration Form: `/test-register`
 
-## External API Authentication
+## External API Authentication via Proxy
 
-The "Login via External API" and "Register via External API" buttons send requests to the external API endpoints:
+The "Login via External API" and "Register via External API" buttons send requests to the API endpoints through a local proxy:
 
 #### Login API
 
 ```
-POST https://aiemployee.site/api/auth/login
+# Frontend calls this endpoint:
+POST /api/proxy/auth/login
 Content-Type: application/json
 Accept: application/json
+X-CSRF-TOKEN: {{csrf_token}}
+
+# Which proxies to:
+POST https://aiemployee.site/api/auth/login
 
 {
   "email": "your-email@example.com",
@@ -34,9 +39,14 @@ Accept: application/json
 #### Register API
 
 ```
-POST https://aiemployee.site/api/auth/register
+# Frontend calls this endpoint:
+POST /api/proxy/auth/register
 Content-Type: application/json
 Accept: application/json
+X-CSRF-TOKEN: {{csrf_token}}
+
+# Which proxies to:
+POST https://aiemployee.site/api/auth/register
 
 {
   "name": "Your Name",
@@ -50,7 +60,7 @@ Accept: application/json
 
 A key feature of these test forms is the ability to see the API response directly on the page. When you use the "Login via External API" or "Register via External API" buttons:
 
-1. The form makes an API call to the respective endpoint
+1. The form makes an API call to the proxy which forwards it to aiemployee.site
 2. A response card appears below the form with:
    - HTTP status code badge (color-coded by status type)
    - Full JSON response in a scrollable pre-formatted container
@@ -63,6 +73,32 @@ This feature makes it easy to:
 - See exactly what the API returns
 - Copy access tokens for use in other applications
 - Confirm authentication works correctly
+
+## CORS Issues and Solution
+
+The system includes a proxy solution for CORS (Cross-Origin Resource Sharing) issues. When a web application makes requests to a different domain, browsers enforce CORS security policies that can block these requests.
+
+### Why We Need a Proxy
+
+Direct API calls to external domains (like aiemployee.site) from your browser may fail due to:
+
+1. Browser security policies
+2. Missing CORS headers on the external API
+3. Preflight OPTIONS requests being rejected
+
+While tools like Postman and n8n can access these APIs directly (they don't enforce CORS), browser JavaScript needs a workaround.
+
+### How Our Proxy Works
+
+1. Your frontend JavaScript makes a request to your own server at `/api/proxy/auth/*`
+2. Your Laravel server receives this request
+3. Laravel makes a server-side HTTP request to `https://aiemployee.site/api/auth/*`
+4. The external API responds to your server
+5. Your server forwards this response back to your frontend
+
+This approach eliminates CORS issues because:
+- Browser → Your Server: Same-origin request (no CORS problem)
+- Your Server → External API: Server-to-server request (CORS irrelevant)
 
 ## Error Handling
 
@@ -80,10 +116,6 @@ The forms include comprehensive error handling:
 3. View the API response in the card below
 4. If successful, use the "Copy Access Token" button to copy the JWT token
 5. Use the token in your applications as needed
-
-## CORS Considerations
-
-The external API endpoints have been configured to allow cross-origin requests from your application. No CSRF token is needed for these external API calls.
 
 ## API Documentation
 
