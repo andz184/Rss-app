@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Trợ Lý AI Giọng Nói</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Trợ Lý AI Giọng Nói</h1>
+        <div id="conversation-area" class="conversation-area">
+            <div class="message system"><span>Hệ thống:</span> Nhấn "Bắt Đầu Hội Thoại" để bắt đầu.</div>
+        </div>
+        <div class="controls">
+            <button id="toggle-conversation-btn">Bắt Đầu Hội Thoại</button>
+            <div id="status-indicator" class="status-indicator-idle"></div>
+            <span id="status-text">Đã dừng</span>
+        </div>
+        
+        <!-- Tùy chọn lịch sử trò chuyện -->
+        <div class="history-controls">
+            <label class="switch">
+                <input type="checkbox" id="use-history-toggle" checked>
+                <span class="slider round"></span>
+            </label>
+            <span>Sử dụng lịch sử trò chuyện</span>
+            <button id="clear-history-btn" class="clear-btn">Xóa lịch sử</button>
+        </div>
+        
+        <!-- Điều khiển âm thanh phụ (hiển thị) -->
+        <div class="audio-controls">
+            <div class="volume-control">
+                <label for="volume-slider">Âm lượng:</label>
+                <input type="range" id="volume-slider" min="0" max="1" step="0.1" value="0.7">
+                <span id="volume-value">70%</span>
+            </div>
+            <audio id="audio-player" controls autoplay preload="auto"></audio>
+        </div>
+        
+        <!-- Thông tin về tính năng triệt echo -->
+        <div class="echo-info">
+            <p><strong>Chú ý:</strong> Hệ thống có tính năng triệt tiếng vọng tự động để tránh trợ lý nhận dạng lại chính giọng nói của mình. Điều này có thể làm tạm ngưng nhận dạng giọng nói trong khoảng 1-2 giây sau khi trợ lý nói xong.</p>
+            <p>Để tránh echo tốt hơn, hãy điều chỉnh âm lượng xuống mức vừa đủ và sử dụng tai nghe nếu có thể.</p>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
+    <script src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+</html> 

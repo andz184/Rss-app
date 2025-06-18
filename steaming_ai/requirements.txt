@@ -1,0 +1,8 @@
+requests
+groq
+elevenlabs
+Flask
+Flask-SocketIO
+python-dotenv
+simple-websocket
+gtts 
