@@ -16,6 +16,9 @@
         <a href="{{ route('web-scraper.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('web-scraper.*') ? 'active' : '' }}">
             <i class="bi bi-code-slash"></i> {{ __('Web to RSS Tool') }}
         </a>
+        <a href="{{ route('streaming-ai.index') }}" class="list-group-item list-group-item-action {{ request()->routeIs('streaming-ai.*') ? 'active' : '' }}">
+            <i class="bi bi-robot"></i> {{ __('Streaming AI Assistant') }}
+        </a>
     </div>
 </div>
 

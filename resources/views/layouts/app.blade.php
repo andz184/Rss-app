@@ -399,30 +399,26 @@
 
                 <!-- RSS Module -->
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title">Đọc RSS</div>
+                    <div class="sidebar-section-title">{{ __('Đọc RSS') }}</div>
                     <ul class="nav flex-column">
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->is('articles*') ? 'active' : '' }}" href="{{ route('articles.index') }}">
-                                <i class="fas fa-newspaper"></i>
-                                <span>Bài viết</span>
+                            <a class="nav-link {{ request()->routeIs('articles.index') ? 'active' : '' }}" href="{{ route('articles.index') }}">
+                                <i class="bi bi-newspaper"></i> <span>{{ __('Bài viết') }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->is('feeds*') ? 'active' : '' }}" href="{{ route('feeds.index') }}">
-                                <i class="fas fa-rss"></i>
-                                <span>Nguồn tin</span>
+                            <a class="nav-link {{ request()->routeIs('feeds.index') ? 'active' : '' }}" href="{{ route('feeds.index') }}">
+                                <i class="bi bi-rss"></i> <span>{{ __('Nguồn tin') }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->is('categories*') ? 'active' : '' }}" href="{{ route('categories.index') }}">
-                                <i class="fas fa-folder"></i>
-                                <span>Danh mục</span>
+                            <a class="nav-link {{ request()->routeIs('categories.index') ? 'active' : '' }}" href="{{ route('categories.index') }}">
+                                <i class="bi bi-folder"></i> <span>{{ __('Danh mục') }}</span>
                             </a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->is('web-scraper*') ? 'active' : '' }}" href="{{ route('web-scraper.index') }}">
-                                <i class="fas fa-code"></i>
-                                <span>Web to RSS</span>
+                            <a class="nav-link {{ request()->routeIs('web-scraper.index') ? 'active' : '' }}" href="{{ route('web-scraper.index') }}">
+                                <i class="bi bi-code-slash"></i> <span>{{ __('Web to RSS') }}</span>
                             </a>
                         </li>
                     </ul>
@@ -430,13 +426,17 @@
 
                 <!-- Additional Modules (Placeholder for future integration) -->
                 <div class="sidebar-section">
-                    <div class="sidebar-section-title">Mô-đun</div>
+                    <div class="sidebar-section-title">{{ __('Mô-đun') }}</div>
                     <ul class="nav flex-column">
                         <!-- Agent-S Module -->
                         <li class="nav-item">
-                            <a class="nav-link {{ request()->is('agents*') || request()->is('agent-tasks*') ? 'active' : '' }}" href="{{ route('agents.index') }}">
-                                <i class="fas fa-robot"></i>
-                                <span>Agent AI</span>
+                            <a class="nav-link {{ request()->routeIs('agents.index') ? 'active' : '' }}" href="{{ route('agents.index') }}">
+                                <i class="bi bi-robot"></i> <span>{{ __('Agent AI') }}</span>
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link {{ request()->routeIs('streaming-ai.index') ? 'active' : '' }}" href="{{ route('streaming-ai.index') }}">
+                                <i class="bi bi-mic-fill"></i> <span>{{ __('Trợ lý AI (Stream)') }}</span>
                             </a>
                         </li>
                         <li class="nav-item">

@@ -11,6 +11,9 @@ use App\Http\Controllers\Auth\TestRegisterController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\File;
+use App\Http\Controllers\ScreenshotController;
+use App\Http\Controllers\WebScraperController;
+use App\Http\Controllers\StreamingAiController;
 
 /*
 |--------------------------------------------------------------------------
@@ -186,3 +189,5 @@ Route::get('/rss/simple', function() {
         return response()->json(['error' => 'Failed to process feed: ' . $e->getMessage()], 500);
     }
 })->name('rss.simple');
+
+Route::get('/streaming-ai', [StreamingAiController::class, 'index'])->name('streaming-ai.index');
